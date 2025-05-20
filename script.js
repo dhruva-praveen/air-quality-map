@@ -3,7 +3,7 @@ const cityInput = document.getElementById('city');
 const ctx = document.getElementById('airQualityChart').getContext('2d');
 
 // Replace with your API key from Weatherbit or another air quality service
-const apiKey = 'YOUR_API_KEY'; // Replace with your actual API key
+const apiKey = '2a12f8eddee34f54a3d17c7cfd98b7f2	'; // Replace with your actual API key
 
 searchBtn.addEventListener('click', async function() {
     const city = cityInput.value.trim();
