@@ -3,34 +3,49 @@ const cityInput = document.getElementById('city');
 const ctx = document.getElementById('airQualityChart').getContext('2d');
 
 // Your Weatherbit API key
-const apiKey = '2a12f8eddee34f54a3d17c7cfd98b7f2'; // Your actual API key
+const apiKey = '2a12f8eddee34f54a3d17c7cfd98b7f2'; // Weatherbit API key
+const geoApiKey = 'aab53975799440b9993e0df38968b0fd'; // Your Geocoding API key
 
-searchBtn.addEventListener('click', async function() {
+searchBtn.addEventListener('click', async function () {
     const city = cityInput.value.trim();
     if (city === "") return alert("Please enter a city name!");
 
-    // API endpoint with query parameters: city and your API key
-    const url = `https://api.weatherbit.io/v2.0/current/airquality?city=${city}&key=${apiKey}`;
-
     try {
-        // Fetch air quality data
-        const response = await fetch(url);
-        const data = await response.json();
+        // Step 1: Get latitude and longitude for the city using the Geocoding API (OpenCage)
+        const geoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${city}&key=${geoApiKey}`;
 
-        // Check if the data is valid
-        if (!data.data) {
+        const geoResponse = await fetch(geoUrl);
+        const geoData = await geoResponse.json();
+
+        // Check if city was found by geocoding service
+        if (geoData.results.length === 0) {
             alert("City not found. Please try another.");
             return;
         }
 
-        // Get air quality data for the city
-        const airQuality = data.data[0].aqi; // Air Quality Index (AQI)
-        const pm25 = data.data[0].pm25;     // PM2.5 (particulate matter 2.5)
-        const pm10 = data.data[0].pm10;     // PM10 (particulate matter 10)
-        const no2 = data.data[0].no2;       // Nitrogen Dioxide (NO2)
-        const co = data.data[0].co;         // Carbon Monoxide (CO)
+        const lat = geoData.results[0].geometry.lat;
+        const lon = geoData.results[0].geometry.lng;
 
-        // Create a chart to display air quality data
+        // Step 2: Use lat and lon to get air quality data from Weatherbit API
+        const airQualityUrl = `https://api.weatherbit.io/v2.0/current/airquality?lat=${lat}&lon=${lon}&key=${apiKey}`;
+
+        const airQualityResponse = await fetch(airQualityUrl);
+        const airQualityData = await airQualityResponse.json();
+
+        // Check if air quality data was returned
+        if (!airQualityData.data) {
+            alert("Unable to fetch air quality data. Please try again.");
+            return;
+        }
+
+        // Step 3: Get air quality data from Weatherbit API response
+        const airQuality = airQualityData.data[0].aqi; // Air Quality Index (AQI)
+        const pm25 = airQualityData.data[0].pm25;     // PM2.5 (particulate matter 2.5)
+        const pm10 = airQualityData.data[0].pm10;     // PM10 (particulate matter 10)
+        const no2 = airQualityData.data[0].no2;       // Nitrogen Dioxide (NO2)
+        const co = airQualityData.data[0].co;         // Carbon Monoxide (CO)
+
+        // Step 4: Create a chart to display air quality data
         const airQualityChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -58,7 +73,7 @@ searchBtn.addEventListener('click', async function() {
                     },
                     tooltip: {
                         callbacks: {
-                            label: function(tooltipItem) {
+                            label: function (tooltipItem) {
                                 return `${tooltipItem.label}: ${tooltipItem.raw}`;
                             }
                         }
@@ -68,7 +83,7 @@ searchBtn.addEventListener('click', async function() {
         });
 
     } catch (error) {
-        console.error("Error fetching data:", error);
-        alert("Unable to fetch air quality data. Please try again later.");
+        console.error("Error:", error);
+        alert("Unable to fetch data. Please try again later.");
     }
 });
