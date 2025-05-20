@@ -1,0 +1,35 @@
+git init
+git add .
+git commit -m "Initial commit"
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Air Quality</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- For Charts -->
+</head>
+<body>
+    <header>
+        <h1>Global Air Quality Index</h1>
+        <p>Check air quality around the world</p>
+    </header>
+
+    <section class="search">
+        <input type="text" id="city" placeholder="Enter city name" />
+        <button id="searchBtn">Search</button>
+    </section>
+
+    <section class="chart">
+        <canvas id="airQualityChart"></canvas>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Air Quality</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
