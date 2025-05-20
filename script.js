@@ -1,49 +1,44 @@
-const searchBtn = document.getElementById('searchBtn');
-const cityInput = document.getElementById('city');
-const aqiDisplay = document.getElementById('aqiDisplay'); // For displaying AQI
+npm install openmeteo
 
-// Your Weatherbit API key
-const apiKey = '2a12f8eddee34f54a3d17c7cfd98b7f2'; // Weatherbit API key
-const geoApiKey = 'aab53975799440b9993e0df38968b0fd'; // Your Geocoding API key
+import { fetchWeatherApi } from 'openmeteo';
 
-searchBtn.addEventListener('click', async function () {
-    const city = cityInput.value.trim();
-    if (city === "") return alert("Please enter a city name!");
+const params = {
+    latitude: 52.52,
+    longitude: 13.41,
+    hourly: ["pm10", "pm2_5"]
+};
 
-    try {
-        // Step 1: Get latitude and longitude for the city using the Geocoding API (OpenCage)
-        const geoUrl = `https://api.opencagedata.com/geocode/v1/json?q=${city}&key=${geoApiKey}`;
+const url = "https://air-quality-api.open-meteo.com/v1/air-quality";
+const responses = await fetchWeatherApi(url, params);
 
-        const geoResponse = await fetch(geoUrl);
-        const geoData = await geoResponse.json();
+// Process first location
+const response = responses[0];
 
-        // Check if city was found by geocoding service
-        if (geoData.results.length === 0) {
-            alert("City not found. Please try another.");
-            return;
-        }
+const utcOffsetSeconds = response.utcOffsetSeconds();
+const hourly = response.hourly();
 
-        const lat = geoData.results[0].geometry.lat;
-        const lon = geoData.results[0].geometry.lng;
+// Generate hourly timestamps
+const timeArray = [...Array((Number(hourly.timeEnd()) - Number(hourly.time())) / hourly.interval())].map(
+    (_, i) => new Date((Number(hourly.time()) + i * hourly.interval() + utcOffsetSeconds) * 1000)
+);
 
-        console.log(`Latitude: ${lat}, Longitude: ${lon}`); // Check coordinates in the console
+// Extract PM values
+const pm10Array = hourly.variables(0).valuesArray();
+const pm25Array = hourly.variables(1).valuesArray();
 
-        // Step 2: Use lat and lon to get air quality data from Weatherbit API
-        const airQualityUrl = `https://api.weatherbit.io/v2.0/current/airquality?lat=${lat}&lon=${lon}&key=${apiKey}`;
+// Display in console
+console.log("Air Quality Data (PM10 & PM2.5):");
+for (let i = 0; i < timeArray.length; i++) {
+    console.log(`${timeArray[i].toISOString()} | PM10: ${pm10Array[i]} µg/m³ | PM2.5: ${pm25Array[i]} µg/m³`);
+}
 
-        const airQualityResponse = await fetch(airQualityUrl);
-        const airQualityData = await airQualityResponse.json();
-
-        console.log('Air Quality Data:', airQualityData); // Log air quality data to the console
-
-        // Step 3: Get the Air Quality Index (AQI)
-        const aqi = airQualityData.data[0].aqi; // AQI value
-
-        // Display AQI value
-        aqiDisplay.textContent = `Air Quality Index (AQI) for ${city}: ${aqi}`;
-
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Unable to fetch data. Please try again later.");
+// OPTIONAL: If you're using this in a browser and want to show the data in HTML
+const container = document.getElementById("air-quality-display");
+if (container) {
+    container.innerHTML = "<h2>Air Quality Forecast</h2>";
+    for (let i = 0; i < timeArray.length; i++) {
+        const div = document.createElement("div");
+        div.textContent = `${timeArray[i].toLocaleString()} - PM10: ${pm10Array[i]} µg/m³, PM2.5: ${pm25Array[i]} µg/m³`;
+        container.appendChild(div);
     }
-});
+}
